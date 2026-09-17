@@ -94,7 +94,7 @@ else:
     # 3. Barre Latérale avec Logo
     logo_path = "actifs/logo_agc.JPEG" if os.path.exists("actifs/logo_agc.JPEG") else "assets/logo_agc.JPEG"
     if os.path.exists(logo_path):
-        st.sidebar.image(logo_path, use_column_width=True)
+        st.sidebar.image(logo_path, use_container_width=True)
     
     st.sidebar.title(f"👤 {st.session_state.get('nom_complet', 'Admin')}")
     if st.sidebar.button("Déconnexion", use_container_width=True):
@@ -116,7 +116,7 @@ else:
             st.info("Aucun produit enregistré.")
 
     with tab2:
-        # Chargement du template HTML personnalisée
+        # Chargement du template HTML personnalisé
         html_file = "modèles/tableau de bord.html" if os.path.exists("modèles/tableau de bord.html") else "templates/tableau de bord.html"
         if os.path.exists(html_file):
             with open(html_file, "r", encoding="utf-8") as f:
