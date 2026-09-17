@@ -1,0 +1,11 @@
+streamlit
+pandas
+plotly
+sqlalchemy
+bcrypt
+fastapi
+uvicorn
+jinja2
+python-multipart
+passlib[bcrypt]
+pyjwt

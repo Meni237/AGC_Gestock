@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AGC Gestock - Gestion des Stocks</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { display: flex; min-height: 100vh; background-color: #f4f6f9; }
+        
+        .sidebar { width: 250px; background-color: #002752; color: white; padding: 20px 0; display: flex; flex-direction: column; }
+        .sidebar-brand { display: flex; align-items: center; justify-content: center; gap: 10px; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 18px; font-weight: bold; }
+        .sidebar-logo { width: 35px; height: 35px; border-radius: 6px; object-fit: cover; }
+        .sidebar-menu { list-style: none; margin-top: 20px; }
+        .sidebar-menu li a { display: block; padding: 12px 25px; color: #cfd8dc; text-decoration: none; font-size: 15px; }
+        .sidebar-menu li a:hover, .sidebar-menu li a.active { background-color: #004085; color: white; }
+        .logout-btn { margin-top: auto; padding: 12px 25px; background: #c82333; color: white; text-align: center; text-decoration: none; font-weight: bold; }
+
+        .main-content { flex: 1; padding: 30px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        
+        /* Formulaire & Table */
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 25px; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
+        .form-group label { font-size: 13px; font-weight: 600; color: #555; display: block; margin-bottom: 5px; }
+        .form-group input { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; }
+        .btn-add { background-color: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; height: 38px; align-self: flex-end; }
+        .btn-add:hover { background-color: #218838; }
+
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background-color: #004085; color: white; font-weight: 600; }
+        tr:hover { background-color: #f8f9fa; }
+        .badge-warning { background-color: #ffc107; color: #212529; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .badge-ok { background-color: #28a745; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-brand">
+            <img src="/static/logo_agc.JPEG" alt="AGC Logo" class="sidebar-logo">
+            <span>AGC_Gestock</span>
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="/dashboard">📊 Tableau de bord</a></li>
+            <li><a href="/items" class="active">📦 Stock / Articles</a></li>
+            <li><a href="#">📋 Mouvements</a></li>
+            <li><a href="#">👥 Utilisateurs</a></li>
+        </ul>
+        <a href="/" class="logout-btn">Déconnexion</a>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h2>Gestion du Stock & Articles</h2>
+        </div>
+
+        <!-- Formulaire d'ajout d'article -->
+        <div class="card">
+            <h3 style="margin-bottom: 15px; color: #333;">Ajouter un nouvel article</h3>
+            <form action="/items/add" method="post" class="form-grid">
+                <div class="form-group">
+                    <label>Nom de l'article</label>
+                    <input type="text" name="name" required placeholder="Ex: Papier A4">
+                </div>
+                <div class="form-group">
+                    <label>Catégorie</label>
+                    <input type="text" name="category" required placeholder="Ex: Fourniture Bureau">
+                </div>
+                <div class="form-group">
+                    <label>Quantité initiale</label>
+                    <input type="number" name="quantity" min="0" required placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label>Seuil d'alerte min.</label>
+                    <input type="number" name="min_quantity" min="1" value="5" required>
+                </div>
+                <button type="submit" class="btn-add">+ Ajouter</button>
+            </form>
+        </div>
+
+        <!-- Tableau des articles -->
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Article</th>
+                    <th>Catégorie</th>
+                    <th>Quantité</th>
+                    <th>Statut</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>{{ item.id }}</td>
+                    <td><strong>{{ item.name }}</strong></td>
+                    <td>{{ item.category }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>
+                        {% if item.quantity <= item.min_quantity %}
+                            <span class="badge-warning">Stock Bas</span>
+                        {% else %}
+                            <span class="badge-ok">En Stock</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="text-align: center; color: #888; padding: 20px;">
+                        Aucun article enregistré pour le moment.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</body>
+</html>
