@@ -2,13 +2,15 @@ import streamlit as st
 import pandas as pd
 import sqlite3
 import hashlib
+import os
+import streamlit.components.v1 as components
 
 # 1. Configuration de la page
 st.set_page_config(
     page_title="AGC_Gestock",
     page_icon="📦",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
 DB_PATH = "gestock.db"
@@ -22,8 +24,6 @@ def init_db():
     default_pass = hashlib.sha256("admin123".encode()).hexdigest()
     conn = get_connection()
     cursor = conn.cursor()
-    
-    # Création de la table users
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -32,8 +32,6 @@ def init_db():
             nom_complet TEXT NOT NULL
         )
     """)
-    
-    # Création de la table produits
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS produits (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -44,13 +42,10 @@ def init_db():
             stock_seuil INTEGER DEFAULT 5
         )
     """)
-    
-    # Insertion de l'utilisateur admin par défaut
     cursor.execute("""
         INSERT OR IGNORE INTO users (username, password_hash, nom_complet)
         VALUES (?, ?, ?)
     """, ("admin", default_pass, "Administrateur AGC"))
-    
     conn.commit()
     conn.close()
 
@@ -64,6 +59,12 @@ if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False
 
 if not st.session_state["logged_in"]:
+    # Affichage du logo sur la page de connexion si présent
+    if os.path.exists("actifs/logo_agc.JPEG"):
+        st.image("actifs/logo_agc.JPEG", width=150)
+    elif os.path.exists("assets/logo_agc.JPEG"):
+        st.image("assets/logo_agc.JPEG", width=150)
+
     st.markdown("<h2 style='text-align: center;'>🔒 AGC_Gestock - Connexion</h2>", unsafe_allow_html=True)
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
@@ -90,7 +91,11 @@ if not st.session_state["logged_in"]:
                 else:
                     st.error("Identifiant ou mot de passe incorrect.")
 else:
-    # 3. Application Principale
+    # 3. Barre Latérale avec Logo
+    logo_path = "actifs/logo_agc.JPEG" if os.path.exists("actifs/logo_agc.JPEG") else "assets/logo_agc.JPEG"
+    if os.path.exists(logo_path):
+        st.sidebar.image(logo_path, use_column_width=True)
+    
     st.sidebar.title(f"👤 {st.session_state.get('nom_complet', 'Admin')}")
     if st.sidebar.button("Déconnexion", use_container_width=True):
         st.session_state["logged_in"] = False
@@ -98,7 +103,7 @@ else:
 
     st.title("📦 AGC_Gestock - Gestion de Stock")
     
-    tab1, tab2 = st.tabs(["📊 État du Stock", "➕ Ajouter Produit"])
+    tab1, tab2, tab3 = st.tabs(["📊 État du Stock", "🖥️ Tableau de Bord HTML", "➕ Ajouter Produit"])
     
     with tab1:
         conn = get_connection()
@@ -111,6 +116,16 @@ else:
             st.info("Aucun produit enregistré.")
 
     with tab2:
+        # Chargement du template HTML personnalisée
+        html_file = "modèles/tableau de bord.html" if os.path.exists("modèles/tableau de bord.html") else "templates/tableau de bord.html"
+        if os.path.exists(html_file):
+            with open(html_file, "r", encoding="utf-8") as f:
+                html_content = f.read()
+            components.html(html_content, height=600, scrolling=True)
+        else:
+            st.warning("Fichier HTML du tableau de bord introuvable.")
+
+    with tab3:
         with st.form("add_product"):
             code_p = st.text_input("Code Produit")
             nom_p = st.text_input("Nom du Produit")
