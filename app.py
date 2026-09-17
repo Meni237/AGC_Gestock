@@ -16,7 +16,10 @@ DB_PATH = "gestock.db"
 engine = create_engine(f"sqlite:///{DB_PATH}")
 
 def init_db():
-    with engine.connect() as conn:
+    default_pass = hashlib.sha256("admin123".encode()).hexdigest()
+    
+    with engine.begin() as conn:
+        # Table Utilisateurs
         conn.execute(text("""
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -25,6 +28,8 @@ def init_db():
                 nom_complet TEXT NOT NULL
             );
         """))
+        
+        # Table Produits
         conn.execute(text("""
             CREATE TABLE IF NOT EXISTS produits (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -35,12 +40,15 @@ def init_db():
                 stock_seuil INTEGER DEFAULT 5
             );
         """))
-        default_pass = hashlib.sha256("admin123".encode()).hexdigest()
-        conn.execute(text(f"""
-            INSERT OR IGNORE INTO users (username, password_hash, nom_complet)
-            VALUES ('admin', '{default_pass}', 'Administrateur AGC');
-        """))
-        conn.commit()
+        
+        # Insertion compte Admin par défaut
+        conn.execute(
+            text("""
+                INSERT OR IGNORE INTO users (username, password_hash, nom_complet)
+                VALUES (:u, :p, :n);
+            """),
+            {"u": "admin", "p": default_pass, "n": "Administrateur AGC"}
+        )
 
 init_db()
 
@@ -76,7 +84,7 @@ if not st.session_state["logged_in"]:
 else:
     # 4. Application Principale
     st.sidebar.title(f"👤 {st.session_state.get('nom_complet', 'Admin')}")
-    if st.sidebar.button("Déconnexion"):
+    if st.sidebar.button("Déconnexion", use_container_width=True):
         st.session_state["logged_in"] = False
         st.rerun()
 
@@ -99,15 +107,17 @@ else:
             qte = st.number_input("Quantité Initial", min_value=0, value=10)
             seuil = st.number_input("Seuil d'Alerte", min_value=1, value=5)
             
-            if st.form_submit_button("Ajouter", use_container_width=True):
+            if st.form_submit_button("Ajouter au Stock", use_container_width=True):
                 if code_p and nom_p:
                     try:
-                        with engine.connect() as conn:
+                        with engine.begin() as conn:
                             conn.execute(
-                                text("INSERT INTO produits (code_produit, nom_produit, categorie, quantite, stock_seuil) VALUES (:c, :n, :cat, :q, :s)"),
+                                text("""
+                                    INSERT INTO produits (code_produit, nom_produit, categorie, quantite, stock_seuil) 
+                                    VALUES (:c, :n, :cat, :q, :s)
+                                """),
                                 {"c": code_p, "n": nom_p, "cat": cat_p, "q": qte, "s": seuil}
                             )
-                            conn.commit()
                         st.success("Produit ajouté !")
                         st.rerun()
                     except Exception:
